@@ -1,0 +1,10 @@
+../Core/Middleware/control/kinematics.c:19:14:clamp_float	24	static
+../Core/Middleware/control/kinematics.c:26:6:Kinematics_Init	16	static
+../Core/Middleware/control/kinematics.c:53:6:Kinematics_InverseSkidSteer	32	static
+../Core/Middleware/control/kinematics.c:68:6:Kinematics_Inverse	16	static
+../Core/Middleware/control/kinematics.c:79:6:Kinematics_Forward	24	static
+../Core/Middleware/control/kinematics.c:89:7:Kinematics_ApplyDeadbandCompensation	32	static
+../Core/Middleware/control/kinematics.c:106:6:Kinematics_ComputeMotorDuties	56	static
+../Core/Middleware/control/kinematics.c:146:7:Kinematics_VelocityToRpm	24	static
+../Core/Middleware/control/kinematics.c:155:7:Kinematics_RpmToVelocity	24	static
+../Core/Middleware/control/kinematics.c:161:7:Kinematics_VelocityToTicksPerSec	24	static

@@ -1,0 +1,7 @@
+../Core/Tasks/task_safety_watchdog.c:16:6:Task_SafetyWatchdog_Init	8	static
+../Core/Tasks/task_safety_watchdog.c:24:6:Task_SafetyWatchdog_Feed	8	static
+../Core/Tasks/task_safety_watchdog.c:33:6:Task_SafetyWatchdog_TriggerMine	8	static
+../Core/Tasks/task_safety_watchdog.c:42:6:Task_SafetyWatchdog_ClearMine	4	static
+../Core/Tasks/task_safety_watchdog.c:48:6:Task_SafetyWatchdog_IsTripped	4	static
+../Core/Tasks/task_safety_watchdog.c:53:13:Task_SafetyWatchdog_GetReason	4	static
+../Core/Tasks/task_safety_watchdog.c:58:6:StartSafetyWatchdogTask	24	static

@@ -1,0 +1,7 @@
+../Core/BSP/tim_encoder_driver.c:22:6:TIM_Encoder_Init	16	static
+../Core/BSP/tim_encoder_driver.c:45:6:TIM_Encoder_Update	80	static
+../Core/BSP/tim_encoder_driver.c:80:9:TIM_Encoder_GetTotalTicks	16	static
+../Core/BSP/tim_encoder_driver.c:89:9:TIM_Encoder_GetDeltaTicks	16	static
+../Core/BSP/tim_encoder_driver.c:98:7:TIM_Encoder_GetLinearVelocity	16	static
+../Core/BSP/tim_encoder_driver.c:107:6:TIM_Encoder_Reset	16	static
+../Core/BSP/tim_encoder_driver.c:138:28:TIM_Encoder_GetInterface	4	static

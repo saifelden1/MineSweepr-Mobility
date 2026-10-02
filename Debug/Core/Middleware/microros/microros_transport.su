@@ -1,0 +1,12 @@
+../Core/Middleware/microros/microros_transport.c:44:7:MicroROS_Transport_Init	16	static
+../Core/Middleware/microros/microros_transport.c:94:6:MicroROS_Transport_InitHandles	24	static
+../Core/Middleware/microros/microros_transport.c:102:6:MicroROS_Transport_Open	8	static
+../Core/Middleware/microros/microros_transport.c:129:6:MicroROS_Transport_Close	8	static
+../Core/Middleware/microros/microros_transport.c:143:6:MicroROS_Transport_IsOpen	4	static
+../Core/Middleware/microros/microros_transport.c:148:8:MicroROS_Transport_Available	16	static
+../Core/Middleware/microros/microros_transport.c:168:8:MicroROS_Transport_Read	48	static
+../Core/Middleware/microros/microros_transport.c:230:8:MicroROS_Transport_Write	40	static
+../Core/Middleware/microros/microros_transport.c:326:6:MicroROS_Transport_OnUartIdle	4	static
+../Core/Middleware/microros/microros_transport.c:333:6:MicroROS_Transport_OnTxCplt	8	static
+../Core/Middleware/microros/microros_transport.c:342:6:MicroROS_Transport_OnRxCplt	4	static
+../Core/Middleware/microros/microros_transport.c:347:6:MicroROS_Transport_OnError	8	static

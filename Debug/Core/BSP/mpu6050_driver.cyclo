@@ -1,0 +1,8 @@
+../Core/BSP/mpu6050_driver.c:28:26:i2c_write_reg	1
+../Core/BSP/mpu6050_driver.c:33:26:i2c_read_regs	1
+../Core/BSP/mpu6050_driver.c:38:6:MPU6050_Init	9
+../Core/BSP/mpu6050_driver.c:88:6:MPU6050_ReadRaw	4
+../Core/BSP/mpu6050_driver.c:112:6:MPU6050_ReadCalibrated	6
+../Core/BSP/mpu6050_driver.c:190:7:MPU6050_GetLatestGyroZ	1
+../Core/BSP/mpu6050_driver.c:195:6:MPU6050_CalibrateBias	5
+../Core/BSP/mpu6050_driver.c:248:24:MPU6050_GetInterface	1

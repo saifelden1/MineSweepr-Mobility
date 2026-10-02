@@ -1,0 +1,4 @@
+../Core/Tasks/task_motor_control.c:16:6:Task_MotorControl_Init	1
+../Core/Tasks/task_motor_control.c:23:6:Task_MotorControl_SetTarget	1
+../Core/Tasks/task_motor_control.c:29:6:Task_MotorControl_GetTarget	3
+../Core/Tasks/task_motor_control.c:35:6:StartMotorControlTask	2

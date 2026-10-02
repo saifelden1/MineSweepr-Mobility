@@ -1,0 +1,5 @@
+../Core/Tasks/task_sensor_acq.c:17:6:Task_SensorAcq_Init	8	static
+../Core/Tasks/task_sensor_acq.c:25:6:Task_SensorAcq_GetLatestImu	24	static
+../Core/Tasks/task_sensor_acq.c:34:7:Task_SensorAcq_GetGyroZ	4	static
+../Core/Tasks/task_sensor_acq.c:42:6:Task_SensorAcq_GetLatestGps	24	static
+../Core/Tasks/task_sensor_acq.c:51:6:StartSensorAcqTask	24	static

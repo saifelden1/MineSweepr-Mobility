@@ -1,0 +1,4 @@
+../Core/Tasks/task_motor_control.c:16:6:Task_MotorControl_Init	8	static
+../Core/Tasks/task_motor_control.c:23:6:Task_MotorControl_SetTarget	16	static
+../Core/Tasks/task_motor_control.c:29:6:Task_MotorControl_GetTarget	16	static
+../Core/Tasks/task_motor_control.c:35:6:StartMotorControlTask	56	static

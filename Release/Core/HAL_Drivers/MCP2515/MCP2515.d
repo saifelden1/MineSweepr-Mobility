@@ -1,0 +1,1 @@
+Core/HAL_Drivers/MCP2515/MCP2515.o: ../Core/HAL_Drivers/MCP2515/MCP2515.c

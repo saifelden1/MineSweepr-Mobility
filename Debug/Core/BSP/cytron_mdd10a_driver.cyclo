@@ -1,0 +1,7 @@
+../Core/BSP/cytron_mdd10a_driver.c:16:14:clamp_float	3
+../Core/BSP/cytron_mdd10a_driver.c:23:6:Cytron_MDD10A_Init	1
+../Core/BSP/cytron_mdd10a_driver.c:76:6:Cytron_MDD10A_SetSpeedNorm	6
+../Core/BSP/cytron_mdd10a_driver.c:126:6:Cytron_MDD10A_SetDiffDriveSpeeds	1
+../Core/BSP/cytron_mdd10a_driver.c:136:6:Cytron_MDD10A_SetPwmDuty	18
+../Core/BSP/cytron_mdd10a_driver.c:217:6:Cytron_MDD10A_EmergencyStopAll	1
+../Core/BSP/cytron_mdd10a_driver.c:246:26:Cytron_MDD10A_GetInterface	1

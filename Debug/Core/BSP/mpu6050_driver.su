@@ -1,0 +1,8 @@
+../Core/BSP/mpu6050_driver.c:28:26:i2c_write_reg	32	static
+../Core/BSP/mpu6050_driver.c:33:26:i2c_read_regs	32	static
+../Core/BSP/mpu6050_driver.c:38:6:MPU6050_Init	16	static
+../Core/BSP/mpu6050_driver.c:88:6:MPU6050_ReadRaw	32	static
+../Core/BSP/mpu6050_driver.c:112:6:MPU6050_ReadCalibrated	112	static
+../Core/BSP/mpu6050_driver.c:190:7:MPU6050_GetLatestGyroZ	4	static
+../Core/BSP/mpu6050_driver.c:195:6:MPU6050_CalibrateBias	64	static
+../Core/BSP/mpu6050_driver.c:248:24:MPU6050_GetInterface	4	static
