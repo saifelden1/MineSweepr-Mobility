@@ -7,7 +7,7 @@
 #include <string.h>
 #include <math.h>
 
-extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef IMU_I2C_HANDLE;
 
 static float s_accel_bias_x = 0.0f;
 static float s_accel_bias_y = 0.0f;
@@ -18,18 +18,21 @@ static float s_gyro_bias_z = 0.0f;
 static bool s_is_calibrated = false;
 static bool s_is_initialized = false;
 
+/* Cached latest gyro Z rate in rad/s for fast motor damping query */
+static volatile float s_latest_gyro_z = 0.0f;
+
 /* Orientation quaternion state */
 static float s_quat[4] = {1.0f, 0.0f, 0.0f, 0.0f}; // [w, x, y, z]
 static uint32_t s_last_timestamp_ms = 0;
 
 static HAL_StatusTypeDef i2c_write_reg(uint8_t reg, uint8_t val)
 {
-    return HAL_I2C_Mem_Write(&hi2c1, MPU6050_I2C_ADDR, reg, I2C_MEMADD_SIZE_8BIT, &val, 1, 100);
+    return HAL_I2C_Mem_Write(&IMU_I2C_HANDLE, MPU6050_I2C_ADDR, reg, I2C_MEMADD_SIZE_8BIT, &val, 1, 100);
 }
 
 static HAL_StatusTypeDef i2c_read_regs(uint8_t reg, uint8_t *buf, uint16_t len)
 {
-    return HAL_I2C_Mem_Read(&hi2c1, MPU6050_I2C_ADDR, reg, I2C_MEMADD_SIZE_8BIT, buf, len, 100);
+    return HAL_I2C_Mem_Read(&IMU_I2C_HANDLE, MPU6050_I2C_ADDR, reg, I2C_MEMADD_SIZE_8BIT, buf, len, 100);
 }
 
 bool MPU6050_Init(void)
@@ -78,6 +81,7 @@ bool MPU6050_Init(void)
 
     s_is_initialized = true;
     s_last_timestamp_ms = HAL_GetTick();
+    s_latest_gyro_z = 0.0f;
     return true;
 }
 
@@ -137,6 +141,9 @@ bool MPU6050_ReadCalibrated(imu_data_t *data)
 
     float temp = ((float)raw.temp_raw / 340.0f) + 36.53f;
 
+    /* Update cached heading gyro rate */
+    s_latest_gyro_z = gz;
+
     /* Simple quaternion integration from angular rates */
     float half_dt = 0.5f * dt;
     float q0 = s_quat[0];
@@ -178,6 +185,11 @@ bool MPU6050_ReadCalibrated(imu_data_t *data)
     data->timestamp_ms = now_ms;
 
     return true;
+}
+
+float MPU6050_GetLatestGyroZ(void)
+{
+    return s_latest_gyro_z;
 }
 
 bool MPU6050_CalibrateBias(uint16_t samples)

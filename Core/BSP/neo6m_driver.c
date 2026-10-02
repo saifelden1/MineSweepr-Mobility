@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef GPS_UART_HANDLE;
 extern DMA_HandleTypeDef hdma_usart2_rx;
 
 static uint8_t s_dma_rx_buf[NEO6M_DMA_BUF_SIZE];
@@ -225,23 +225,23 @@ bool NEO6M_Init(void)
     s_has_fix = false;
     s_last_dma_index = 0;
 
-    /* Start DMA circular receive on USART2 */
-    if (HAL_UART_Receive_DMA(&huart2, s_dma_rx_buf, NEO6M_DMA_BUF_SIZE) != HAL_OK)
+    /* Start DMA circular receive on GPS UART */
+    if (HAL_UART_Receive_DMA(&GPS_UART_HANDLE, s_dma_rx_buf, NEO6M_DMA_BUF_SIZE) != HAL_OK)
     {
         return false;
     }
 
-    /* Enable USART2 IDLE line detection interrupt */
-    __HAL_UART_ENABLE_IT(&huart2, UART_IT_IDLE);
+    /* Enable USART IDLE line detection interrupt */
+    __HAL_UART_ENABLE_IT(&GPS_UART_HANDLE, UART_IT_IDLE);
 
     return true;
 }
 
 void NEO6M_UART_IdleCallback(void)
 {
-    if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_IDLE))
+    if (__HAL_UART_GET_FLAG(&GPS_UART_HANDLE, UART_FLAG_IDLE))
     {
-        __HAL_UART_CLEAR_IDLEFLAG(&huart2);
+        __HAL_UART_CLEAR_IDLEFLAG(&GPS_UART_HANDLE);
 
         /* Calculate current position in DMA ring buffer */
         uint16_t current_dma_index = NEO6M_DMA_BUF_SIZE - (uint16_t)__HAL_DMA_GET_COUNTER(&hdma_usart2_rx);

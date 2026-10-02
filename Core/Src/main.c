@@ -1,7 +1,9 @@
 /**
   ******************************************************************************
   * @file           : main.c
-  * @brief          : Main program body for STM32_Mobility
+  * @brief          : Main program body for STM32_Mobility ECU.
+  *                   Controls 4-motor differential skid-steer locomotion,
+  *                   MPU-6050 IMU, NEO-6M GPS, and micro-ROS client.
   ******************************************************************************
   */
 
@@ -12,20 +14,26 @@
 /* Interfaces */
 #include "imu_interface.h"
 #include "motor_interface.h"
-#include "encoder_interface.h"
 #include "gps_interface.h"
 
 /* Concrete BSP Drivers */
 #include "cytron_mdd10a_driver.h"
-#include "tim_encoder_driver.h"
 #include "mpu6050_driver.h"
 #include "neo6m_driver.h"
+
+/* Real-Time FreeRTOS Tasks */
+#include "task_safety_watchdog.h"
+#include "task_motor_control.h"
+#include "task_sensor_acq.h"
+#include "task_microros.h"
 
 /* Peripheral Handles --------------------------------------------------------*/
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 I2C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c2;
+
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart1_tx;
@@ -36,45 +44,41 @@ DMA_HandleTypeDef hdma_usart2_rx;
 osThreadId_t Task_SafetyWatcHandle;
 const osThreadAttr_t Task_SafetyWatc_attributes = {
   .name = "Task_SafetyWatc",
-  .stack_size = 128 * 4,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityRealtime5,
 };
 
 osThreadId_t Task_MotorContrHandle;
 const osThreadAttr_t Task_MotorContr_attributes = {
   .name = "Task_MotorContr",
-  .stack_size = 256 * 4,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
 
-osThreadId_t Task_IMUHandle;
-const osThreadAttr_t Task_IMU_attributes = {
-  .name = "Task_IMU",
-  .stack_size = 256 * 4,
+osThreadId_t Task_SensorAcqHandle;
+const osThreadAttr_t Task_SensorAcq_attributes = {
+  .name = "Task_SensorAcq",
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityAboveNormal,
 };
 
-osThreadId_t Task_CANManagerHandle;
-const osThreadAttr_t Task_CANManager_attributes = {
-  .name = "Task_CANManager",
-  .stack_size = 128 * 4,
+osThreadId_t Task_MicroROSHandle;
+const osThreadAttr_t Task_MicroROS_attributes = {
+  .name = "Task_MicroROS",
+  .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_TIM2_Init(void);
-static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
-static void MX_I2C1_Init(void);
+#if (MOBILITY_PINOUT_SCHEME == 2)
+static void MX_TIM3_Init(void);
+#endif
+static void MX_I2C_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
-
-void StartDefaultTask(void *argument);
-void StartTask02(void *argument);
-void StartTask03(void *argument);
-void StartTask04(void *argument);
 
 /**
   * @brief  The application entry point.
@@ -85,32 +89,32 @@ int main(void)
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
-  /* Configure the system clock */
+  /* Configure the system clock (96 MHz) */
   SystemClock_Config();
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_TIM2_Init();
-  MX_TIM3_Init();
   MX_TIM4_Init();
-  MX_I2C1_Init();
+#if (MOBILITY_PINOUT_SCHEME == 2)
+  MX_TIM3_Init();
+#endif
+  MX_I2C_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
 
   /* Initialize concrete BSP drivers */
   Cytron_MDD10A_Init();
-  TIM_Encoder_Init();
   MPU6050_Init();
   NEO6M_Init();
 
-  /* Init scheduler */
+  /* Init FreeRTOS scheduler */
   osKernelInitialize();
 
-  /* Create the thread(s) */
-  Task_SafetyWatcHandle = osThreadNew(StartDefaultTask, NULL, &Task_SafetyWatc_attributes);
-  Task_MotorContrHandle = osThreadNew(StartTask02, NULL, &Task_MotorContr_attributes);
-  Task_IMUHandle = osThreadNew(StartTask03, NULL, &Task_IMU_attributes);
-  Task_CANManagerHandle = osThreadNew(StartTask04, NULL, &Task_CANManager_attributes);
+  /* Create the real-time threads */
+  Task_SafetyWatcHandle = osThreadNew(StartSafetyWatchdogTask, NULL, &Task_SafetyWatc_attributes);
+  Task_MotorContrHandle = osThreadNew(StartMotorControlTask, NULL, &Task_MotorContr_attributes);
+  Task_SensorAcqHandle  = osThreadNew(StartSensorAcqTask, NULL, &Task_SensorAcq_attributes);
+  Task_MicroROSHandle   = osThreadNew(StartMicroROSTask, NULL, &Task_MicroROS_attributes);
 
   /* Start scheduler */
   osKernelStart();
@@ -122,7 +126,7 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
+  * @brief System Clock Configuration (96 MHz SYSCLK from 16 MHz HSI / 25 MHz HSE)
   */
 void SystemClock_Config(void)
 {
@@ -160,65 +164,7 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief TIM2 Initialization Function (Left Encoder on PA0/PA1, 32-bit counter)
-  */
-static void MX_TIM2_Init(void)
-{
-  TIM_Encoder_InitTypeDef sConfig = {0};
-
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 0;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 0xFFFFFFFF;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
-  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
-  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 0;
-  if (HAL_TIM_Encoder_Init(&htim2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-}
-
-/**
-  * @brief TIM3 Initialization Function (Right Encoder on PA6/PA7, 16-bit counter)
-  */
-static void MX_TIM3_Init(void)
-{
-  TIM_Encoder_InitTypeDef sConfig = {0};
-
-  htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 0;
-  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 0xFFFF;
-  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
-  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
-  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 0;
-  if (HAL_TIM_Encoder_Init(&htim3, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-}
-
-/**
-  * @brief TIM4 Initialization Function (20 kHz PWM on PB6/PB7, ARR=4799)
+  * @brief TIM4 Initialization Function (20 kHz PWM on PB6..PB9, ARR=4799)
   */
 static void MX_TIM4_Init(void)
 {
@@ -227,7 +173,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 4799;
+  htim4.Init.Period = MOTOR_PWM_MAX_TICKS;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
@@ -239,23 +185,88 @@ static void MX_TIM4_Init(void)
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+
+  /* Configure TIM4 Channel 1 (FL PWM - PB6) */
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, MOTOR_FL_PWM_CHANNEL) != HAL_OK)
   {
     Error_Handler();
   }
-  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+
+  /* Configure TIM4 Channel 2 (RL PWM - PB7) */
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, MOTOR_RL_PWM_CHANNEL) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+#if (MOBILITY_PINOUT_SCHEME != 2)
+  /* Configure TIM4 Channel 3 (FR PWM - PB8) */
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, MOTOR_FR_PWM_CHANNEL) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /* Configure TIM4 Channel 4 (RR PWM - PB9) */
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, MOTOR_RR_PWM_CHANNEL) != HAL_OK)
+  {
+    Error_Handler();
+  }
+#endif
+}
+
+#if (MOBILITY_PINOUT_SCHEME == 2)
+static void MX_TIM3_Init(void)
+{
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 0;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = MOTOR_PWM_MAX_TICKS;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, MOTOR_FR_PWM_CHANNEL) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, MOTOR_RR_PWM_CHANNEL) != HAL_OK)
   {
     Error_Handler();
   }
 }
+#endif
 
 /**
-  * @brief I2C1 Initialization Function (MPU-6050 Fast Mode on PB8/PB9 @ 400 kHz)
+  * @brief I2C Initialization Function (MPU-6050 @ 400 kHz Fast Mode)
   */
-static void MX_I2C1_Init(void)
+static void MX_I2C_Init(void)
 {
+#if (MOBILITY_PINOUT_SCHEME == 1)
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.ClockSpeed = IMU_I2C_SPEED_HZ;
+  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+#else
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 400000;
+  hi2c1.Init.ClockSpeed = IMU_I2C_SPEED_HZ;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -267,6 +278,7 @@ static void MX_I2C1_Init(void)
   {
     Error_Handler();
   }
+#endif
 }
 
 /**
@@ -274,8 +286,8 @@ static void MX_I2C1_Init(void)
   */
 static void MX_USART1_UART_Init(void)
 {
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 921600;
+  huart1.Instance = MICROROS_UART_INSTANCE;
+  huart1.Init.BaudRate = MICROROS_UART_BAUDRATE;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
@@ -293,8 +305,8 @@ static void MX_USART1_UART_Init(void)
   */
 static void MX_USART2_UART_Init(void)
 {
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 9600;
+  huart2.Instance = GPS_UART_INSTANCE;
+  huart2.Init.BaudRate = GPS_UART_BAUDRATE;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -320,55 +332,21 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /* Configure PC13 (Heartbeat LED) */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
-  GPIO_InitStruct.Pin = GPIO_PIN_13;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /* Configure PB12 & PB13 (Cytron DIR pins) */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12|GPIO_PIN_13, GPIO_PIN_RESET);
-  GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13;
+  /* Configure FL DIR (PB4) and RL DIR (PB5) */
+  HAL_GPIO_WritePin(GPIOB, MOTOR_FL_DIR_PIN | MOTOR_RL_DIR_PIN, GPIO_PIN_RESET);
+  GPIO_InitStruct.Pin = MOTOR_FL_DIR_PIN | MOTOR_RL_DIR_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-}
 
-/* Tasks Implementations -----------------------------------------------------*/
-
-void StartDefaultTask(void *argument)
-{
-  for(;;)
-  {
-    osDelay(10);
-  }
-}
-
-void StartTask02(void *argument)
-{
-  for(;;)
-  {
-    osDelay(20);
-  }
-}
-
-void StartTask03(void *argument)
-{
-  for(;;)
-  {
-    osDelay(20);
-  }
-}
-
-void StartTask04(void *argument)
-{
-  for(;;)
-  {
-    osDelay(50);
-  }
+  /* Configure FR DIR (PC13) and RR DIR (PC14) */
+  HAL_GPIO_WritePin(GPIOC, MOTOR_FR_DIR_PIN | MOTOR_RR_DIR_PIN, GPIO_PIN_RESET);
+  GPIO_InitStruct.Pin = MOTOR_FR_DIR_PIN | MOTOR_RR_DIR_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 }
 
 /**

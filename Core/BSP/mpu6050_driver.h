@@ -1,15 +1,17 @@
 /**
  * @file mpu6050_driver.h
- * @brief Concrete BSP Driver for MPU-6050 6-DOF IMU over I2C1 Fast Mode.
+ * @brief Concrete BSP Driver for MPU-6050 6-DOF IMU.
  *
  * Implements imu_interface_t with DLPF Mode 3 (44 Hz / 42 Hz), 50 Hz burst reading,
- * calibration routines, and quaternion synthesis.
+ * calibration routines, quaternion synthesis, and non-blocking gyro Z heading extraction.
+ * Configured via mobility_pin_config.h (I2C2 on PB10/PB3 @ 400 kHz by default).
  */
 
 #ifndef MPU6050_DRIVER_H
 #define MPU6050_DRIVER_H
 
 #include "interfaces/imu_interface.h"
+#include "mobility_pin_config.h"
 #include "stm32f4xx_hal.h"
 
 #ifdef __cplusplus
@@ -36,7 +38,7 @@ extern "C" {
 #define DEG_TO_RAD                  (0.017453292519943295f) /**< PI / 180 */
 
 /**
- * @brief Initialize MPU-6050 hardware over I2C1 (wake up, DLPF 3, +-2g, +-2000 dps).
+ * @brief Initialize MPU-6050 hardware over configured I2C (wake up, DLPF 3, +-2g, +-2000 dps).
  * @return true on success, false if device fails to respond or WHO_AM_I mismatch.
  */
 bool MPU6050_Init(void);
@@ -54,6 +56,12 @@ bool MPU6050_ReadRaw(imu_raw_data_t *raw);
  * @return true on success.
  */
 bool MPU6050_ReadCalibrated(imu_data_t *data);
+
+/**
+ * @brief Retrieve most recent calibrated gyro Z angular velocity in rad/s.
+ * @return Gyro Z in rad/s.
+ */
+float MPU6050_GetLatestGyroZ(void);
 
 /**
  * @brief Accumulate sensor samples at rest to calculate zero-rate gyro and accel bias.

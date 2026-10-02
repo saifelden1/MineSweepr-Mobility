@@ -4,20 +4,27 @@
  *
  * Implements gps_interface_t with DMA circular reception, IDLE interrupt handling,
  * and robust non-blocking NMEA sentence parsing (GPGGA / GPRMC) with strict XOR checksum validation.
+ * Configured via mobility_pin_config.h.
  */
 
 #ifndef NEO6M_DRIVER_H
 #define NEO6M_DRIVER_H
 
 #include "interfaces/gps_interface.h"
+#include "mobility_pin_config.h"
 #include "stm32f4xx_hal.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define NEO6M_DMA_BUF_SIZE          (512U)
-#define NEO6M_NMEA_MAX_SENTENCE_LEN (96U)
+#ifndef NEO6M_DMA_BUF_SIZE
+#define NEO6M_DMA_BUF_SIZE          GPS_DMA_BUF_SIZE
+#endif
+
+#ifndef NEO6M_NMEA_MAX_SENTENCE_LEN
+#define NEO6M_NMEA_MAX_SENTENCE_LEN GPS_NMEA_MAX_SENTENCE_LEN
+#endif
 
 /**
  * @brief Initialize NEO-6M hardware driver (USART2 DMA circular receive).

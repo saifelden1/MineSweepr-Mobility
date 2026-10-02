@@ -17,9 +17,15 @@ extern "C" {
 #endif
 
 typedef enum {
+    MOTOR_ID_FL    = 0,  /**< Front-Left Motor */
+    MOTOR_ID_RL    = 1,  /**< Rear-Left Motor */
+    MOTOR_ID_FR    = 2,  /**< Front-Right Motor */
+    MOTOR_ID_RR    = 3,  /**< Rear-Right Motor */
+    MOTOR_ID_COUNT = 4,
+
+    /* Backwards-compatible aliases */
     MOTOR_ID_LEFT  = 0,
-    MOTOR_ID_RIGHT = 1,
-    MOTOR_ID_COUNT = 2
+    MOTOR_ID_RIGHT = 2
 } motor_id_t;
 
 typedef enum {
