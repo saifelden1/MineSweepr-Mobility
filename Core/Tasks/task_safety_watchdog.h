@@ -16,6 +16,8 @@ extern "C" {
 void Task_SafetyWatchdog_Init(void);
 void Task_SafetyWatchdog_Feed(void);
 bool Task_SafetyWatchdog_IsTripped(void);
+void Task_SafetyWatchdog_TriggerMine(void);
+void Task_SafetyWatchdog_ClearMine(void);
 void StartSafetyWatchdogTask(void *argument);
 
 #ifdef __cplusplus

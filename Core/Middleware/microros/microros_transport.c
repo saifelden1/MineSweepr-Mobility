@@ -67,6 +67,27 @@ bool (MicroROS_Transport_Init)(void)
         s_tx_mutex = osMutexNew(&s_tx_mutex_attr);
     }
 
+    /* Configure and link RX DMA if not already linked by MSP */
+    if (s_huart->hdmarx == NULL && s_hdma_rx != NULL)
+    {
+        __HAL_RCC_DMA2_CLK_ENABLE();
+        s_hdma_rx->Instance = DMA2_Stream2;
+        s_hdma_rx->Init.Channel = DMA_CHANNEL_4;
+        s_hdma_rx->Init.Direction = DMA_PERIPH_TO_MEMORY;
+        s_hdma_rx->Init.PeriphInc = DMA_PINC_DISABLE;
+        s_hdma_rx->Init.MemInc = DMA_MINC_ENABLE;
+        s_hdma_rx->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+        s_hdma_rx->Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+        s_hdma_rx->Init.Mode = DMA_CIRCULAR;
+        s_hdma_rx->Init.Priority = DMA_PRIORITY_HIGH;
+        s_hdma_rx->Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+        HAL_DMA_Init(s_hdma_rx);
+        __HAL_LINKDMA(s_huart, hdmarx, *s_hdma_rx);
+
+        HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 5, 0);
+        HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
+    }
+
     /* Configure and link TX DMA if not already linked by MSP */
     if (s_huart->hdmatx == NULL && s_hdma_tx != NULL)
     {
@@ -105,7 +126,7 @@ bool MicroROS_Transport_Open(void)
     {
         return true;
     }
-    if (s_huart == NULL)
+    if (s_huart == NULL || s_huart->hdmarx == NULL)
     {
         return false;
     }

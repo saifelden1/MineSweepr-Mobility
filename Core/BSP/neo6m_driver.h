@@ -24,11 +24,14 @@ typedef struct {
     bool    valid;
 } neo6m_gps_data_t;
 
+#define NEO6M_DMA_BUF_SIZE  (512U)
+
 /**
- * @brief Initialize NEO-6M GPS receiver on USART2.
+ * @brief Initialize NEO-6M GPS receiver on USART2 and starts circular DMA reception.
  * @param huart Pointer to UART_HandleTypeDef (e.g. &huart2).
+ * @return true on success.
  */
-void NEO6M_Init(UART_HandleTypeDef *huart);
+bool NEO6M_Init(UART_HandleTypeDef *huart);
 
 /**
  * @brief Feed incoming UART character into non-blocking NMEA parser.
@@ -37,11 +40,23 @@ void NEO6M_Init(UART_HandleTypeDef *huart);
 void NEO6M_ProcessByte(uint8_t c);
 
 /**
+ * @brief Drain the circular DMA buffer and feed newly arrived bytes to the NMEA parser.
+ */
+void NEO6M_ProcessDmaBuffer(void);
+
+/**
  * @brief Get latest decoded GPS fix.
  * @param data Output data structure.
  * @return true if fix is valid.
  */
 bool NEO6M_GetLatestFix(neo6m_gps_data_t *data);
+
+/**
+ * @brief Retrieve latest GPS fix telemetry (per PROJECT.md interface contract).
+ * @param data Output data structure.
+ * @return true if fix is valid.
+ */
+bool NEO6M_GetData(neo6m_gps_data_t *data);
 
 #ifdef __cplusplus
 }
