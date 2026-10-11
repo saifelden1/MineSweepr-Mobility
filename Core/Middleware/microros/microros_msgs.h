@@ -22,10 +22,11 @@ extern "C" {
 /* ------------------------------------------------------------------------- */
 /* 1. Topic Identifiers for STM32_Mobility                                   */
 /* ------------------------------------------------------------------------- */
-#define TOPIC_ID_CMD_VEL          (0x01U) /**< Sub: /cmd_vel (Twist @ 20 Hz) */
-#define TOPIC_ID_IMU_DATA         (0x02U) /**< Pub: /imu/data (Imu @ 50 Hz) */
-#define TOPIC_ID_GPS_FIX          (0x03U) /**< Pub: /gps/fix (NavSatFix @ 5 Hz) */
-#define TOPIC_ID_STM32_HEARTBEAT  (0x04U) /**< Pub: /stm32_heartbeat (Bool @ 1 Hz) */
+#define TOPIC_ID_CMD_VEL            (0x01U) /**< Sub: /cmd_vel (Twist @ 20 Hz) */
+#define TOPIC_ID_IMU_DATA           (0x02U) /**< Pub: /imu/data (Imu @ 50 Hz) */
+#define TOPIC_ID_GPS_FIX            (0x03U) /**< Pub: /gps/fix (NavSatFix @ 5 Hz) */
+#define TOPIC_ID_MOBILITY_HEARTBEAT (0x04U) /**< Pub: /mobility/heartbeat (Bool @ 1 Hz) */
+#define TOPIC_ID_STM32_HEARTBEAT    TOPIC_ID_MOBILITY_HEARTBEAT /**< Backwards-compatibility alias */
 
 /* ------------------------------------------------------------------------- */
 /* 2. Message Payload Structures                                             */

@@ -6,9 +6,9 @@
  *   Subscribers:
  *     - /cmd_vel         (0x01, geometry_msgs/msg/Twist)
  *   Publishers:
- *     - /imu/data        (0x02, 50 Hz, sensor_msgs/msg/Imu)
- *     - /gps/fix         (0x03, 5 Hz,  sensor_msgs/msg/NavSatFix)
- *     - /stm32_heartbeat (0x04, 1 Hz,  std_msgs/msg/Bool)
+ *     - /imu/data          (0x02, 50 Hz, sensor_msgs/msg/Imu)
+ *     - /gps/fix           (0x03, 5 Hz,  sensor_msgs/msg/NavSatFix)
+ *     - /mobility/heartbeat (0x04, 1 Hz,  std_msgs/msg/Bool)
  */
 
 #ifndef MICROROS_CLIENT_H
@@ -21,6 +21,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define MICROROS_NODE_NAME            "mobility_ecu_node"
+#define TOPIC_NAME_MOBILITY_HEARTBEAT "/mobility/heartbeat"
 
 typedef void (*cmd_vel_callback_t)(const twist_msg_t *twist);
 
@@ -76,6 +79,12 @@ bool MicroROS_Client_PublishHeartbeat(bool state);
  * @brief Get client operational statistics.
  */
 void MicroROS_Client_GetStats(microros_mobility_stats_t *stats);
+
+/**
+ * @brief Check if micro-ROS agent is currently connected.
+ * @return true if agent connected and actively sending packets.
+ */
+bool MicroROS_Client_IsConnected(void);
 
 #ifdef __cplusplus
 }

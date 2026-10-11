@@ -7,6 +7,7 @@
 #include "task_safety_watchdog.h"
 #include "task_motor_control.h"
 #include "task_sensor_acq.h"
+#include "mobility_diagnostics_driver.h"
 #include "microros_client.h"
 #include "cmsis_os.h"
 #include <string.h>
@@ -17,6 +18,7 @@ static void on_cmd_vel_received(const twist_msg_t *twist)
     {
         Task_SafetyWatchdog_Feed();
         Task_MotorControl_SetTarget(twist->linear.x, twist->angular.z);
+        Mobility_Diagnostics_SetRosConnected(true);
     }
 }
 
@@ -24,6 +26,7 @@ void Task_MicroROS_Init(void)
 {
     MicroROS_Client_Init();
     MicroROS_Client_RegisterCmdVelCallback(on_cmd_vel_received);
+    Mobility_Diagnostics_SetRosConnected(false);
 }
 
 void StartMicroROSTask(void *argument)
@@ -41,6 +44,9 @@ void StartMicroROSTask(void *argument)
 
         /* 1. Process incoming serial commands (/cmd_vel) */
         MicroROS_Client_SpinSome(5);
+
+        /* Update micro-ROS agent connection status to LED 3 (PB15 Green) */
+        Mobility_Diagnostics_SetRosConnected(MicroROS_Client_IsConnected());
 
         /* 2. Publish /imu/data @ 50 Hz (20 ms period) */
         if (now - last_imu_tick >= pdMS_TO_TICKS(20))
@@ -82,7 +88,7 @@ void StartMicroROSTask(void *argument)
             }
         }
 
-        /* 4. Publish /stm32_heartbeat @ 1 Hz (1000 ms period) */
+        /* 4. Publish /mobility/heartbeat @ 1 Hz (1000 ms period) */
         if (now - last_hb_tick >= pdMS_TO_TICKS(1000))
         {
             last_hb_tick = now;
