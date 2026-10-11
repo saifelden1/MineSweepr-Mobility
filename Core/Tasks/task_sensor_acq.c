@@ -28,7 +28,7 @@ bool Task_SensorAcq_GetLatestImu(mpu6050_data_t *imu)
 
 bool Task_SensorAcq_GetLatestGps(neo6m_gps_data_t *gps)
 {
-    return NEO6M_GetLatestFix(gps);
+    return NEO6M_GetData(gps);
 }
 
 void StartSensorAcqTask(void *argument)
@@ -38,6 +38,9 @@ void StartSensorAcqTask(void *argument)
 
     for (;;)
     {
+        /* Periodically drain USART2 DMA circular buffer to update GPS fix */
+        NEO6M_ProcessDmaBuffer();
+
         /* Sample MPU-6050 6-DOF IMU */
         mpu6050_data_t imu_buf;
         if (MPU6050_ReadData(&imu_buf))

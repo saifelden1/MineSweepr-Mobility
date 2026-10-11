@@ -19,6 +19,7 @@
 /* USER CODE BEGIN Includes */
 #include "cmsis_os.h"
 #include "mobility_pin_config.h"
+#include "mobility_diagnostics_driver.h"
 #include "cytron_mdd10a_driver.h"
 #include "mpu6050_driver.h"
 #include "neo6m_driver.h"
@@ -53,6 +54,7 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart1_rx;
+DMA_HandleTypeDef hdma_usart2_rx;
 
 /* FreeRTOS Thread Definitions */
 osThreadId_t Task_SafetyWatchdogHandle;
@@ -134,6 +136,7 @@ int main(void)
   MX_USART2_UART_Init();
 
   /* Initialize concrete BSP drivers */
+  Mobility_Diagnostics_Init();
   Cytron_MDD10A_Init(&htim4);
   MPU6050_Init(&hi2c2);
   NEO6M_Init(&huart2);
@@ -317,6 +320,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /* Diagnostic Pins: PB12 (Buzzer), PB13 (LED1 Red), PB14 (LED2 Yellow), PB15 (LED3 Green) */
+  HAL_GPIO_WritePin(GPIOB, MOBILITY_BUZZER_PIN | MOBILITY_LED1_PIN | MOBILITY_LED2_PIN | MOBILITY_LED3_PIN, GPIO_PIN_RESET);
+  GPIO_InitStruct.Pin = MOBILITY_BUZZER_PIN | MOBILITY_LED1_PIN | MOBILITY_LED2_PIN | MOBILITY_LED3_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* TIM4 PWM Pins: PB6 (CH1), PB7 (CH2), PB8 (CH3), PB9 (CH4) */
   GPIO_InitStruct.Pin = MOTOR_FL_PWM_PIN | MOTOR_RL_PWM_PIN | MOTOR_FR_PWM_PIN | MOTOR_RR_PWM_PIN;

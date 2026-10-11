@@ -8,22 +8,48 @@
 #include "task_sensor_acq.h"
 #include "cytron_mdd10a_driver.h"
 #include "mobility_pin_config.h"
+#include "mobility_diagnostics_driver.h"
 #include "cmsis_os.h"
 #include <math.h>
 
 static float s_target_linear_x = 0.0f;
 static float s_target_angular_z = 0.0f;
+static volatile bool s_is_motion_active = false;
 
 void Task_MotorControl_Init(void)
 {
     s_target_linear_x = 0.0f;
     s_target_angular_z = 0.0f;
+    s_is_motion_active = false;
+    Mobility_Diagnostics_SetMotionActive(false);
+}
+
+bool Task_MotorControl_IsMotionActive(void)
+{
+    if (Task_SafetyWatchdog_IsTripped())
+    {
+        return false;
+    }
+    if (s_is_motion_active)
+    {
+        return true;
+    }
+    /* Evaluate commanded target velocities against deadband threshold */
+    float half_gauge = 0.5f * ROBOT_TRACK_GAUGE_M * s_target_angular_z;
+    float v_left  = s_target_linear_x - half_gauge;
+    float v_right = s_target_linear_x + half_gauge;
+    float d_left  = v_left / ROBOT_MAX_LINEAR_VEL_M_S;
+    float d_right = v_right / ROBOT_MAX_LINEAR_VEL_M_S;
+    return (fabsf(d_left) > 0.001f) || (fabsf(d_right) > 0.001f);
 }
 
 void Task_MotorControl_SetTarget(float linear_x, float angular_z)
 {
     s_target_linear_x = linear_x;
     s_target_angular_z = angular_z;
+    bool moving = Task_MotorControl_IsMotionActive();
+    s_is_motion_active = moving;
+    Mobility_Diagnostics_SetMotionActive(moving);
 }
 
 static float apply_deadband(float duty)
@@ -45,9 +71,12 @@ void StartMotorControlTask(void *argument)
 
     for (;;)
     {
+        bool is_moving = false;
+
         if (Task_SafetyWatchdog_IsTripped())
         {
             Cytron_MDD10A_BrakeAll();
+            is_moving = false;
         }
         else
         {
@@ -88,7 +117,13 @@ void StartMotorControlTask(void *argument)
 
             /* Assign to 4 motors */
             Cytron_MDD10A_SetMotors(comp_left, comp_left, comp_right, comp_right);
+
+            /* Motion is active if either wheel side duty magnitude exceeds deadband threshold */
+            is_moving = (fabsf(comp_left) > 0.001f) || (fabsf(comp_right) > 0.001f);
         }
+
+        s_is_motion_active = is_moving;
+        Mobility_Diagnostics_SetMotionActive(is_moving);
 
         osDelay(20); // 50 Hz control rate
     }

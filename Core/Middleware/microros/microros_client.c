@@ -5,6 +5,7 @@
 
 #include "microros_client.h"
 #include "microros_transport.h"
+#include "stm32f4xx_hal.h"
 #include <string.h>
 
 #define SYNC_BYTE_1 (0xAAU)
@@ -65,6 +66,8 @@ void MicroROS_Client_RegisterCmdVelCallback(cmd_vel_callback_t cb)
     s_cmd_vel_callback = cb;
 }
 
+static uint32_t s_last_cmd_vel_tick = 0;
+
 static void dispatch_rx_packet(uint8_t topic_id, const uint8_t *payload, uint16_t len)
 {
     if (topic_id == TOPIC_ID_CMD_VEL)
@@ -76,6 +79,7 @@ static void dispatch_rx_packet(uint8_t topic_id, const uint8_t *payload, uint16_
             s_cmd_vel_callback(&twist);
             s_stats.cmd_vel_received_count++;
             s_stats.agent_connected = true;
+            s_last_cmd_vel_tick = HAL_GetTick();
         }
     }
 }
@@ -202,6 +206,19 @@ void MicroROS_Client_GetStats(microros_mobility_stats_t *stats)
 {
     if (stats != NULL)
     {
+        MicroROS_Client_IsConnected();
         memcpy(stats, &s_stats, sizeof(microros_mobility_stats_t));
     }
+}
+
+bool MicroROS_Client_IsConnected(void)
+{
+    if (s_stats.agent_connected)
+    {
+        if ((HAL_GetTick() - s_last_cmd_vel_tick) > 1000)
+        {
+            s_stats.agent_connected = false;
+        }
+    }
+    return s_stats.agent_connected;
 }

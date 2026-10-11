@@ -6,8 +6,11 @@
 #include "mpu6050_driver.h"
 #include <string.h>
 
-#define MPU6050_REG_PWR_MGMT_1   (0x6BU)
+#define MPU6050_REG_CONFIG       (0x1AU)
+#define MPU6050_REG_GYRO_CONFIG  (0x1BU)
+#define MPU6050_REG_ACCEL_CONFIG (0x1CU)
 #define MPU6050_REG_ACCEL_XOUT_H (0x3BU)
+#define MPU6050_REG_PWR_MGMT_1   (0x6BU)
 
 #define GYRO_SCALE_FACTOR        (131.0f)   /**< LSB per deg/s for +/-250 deg/s range */
 #define ACCEL_SCALE_FACTOR       (16384.0f) /**< LSB per g for +/-2g range */
@@ -27,6 +30,28 @@ bool MPU6050_Init(I2C_HandleTypeDef *hi2c)
     {
         return false;
     }
+
+    /* Configure DLPF (Digital Low Pass Filter) to 42 Hz (register 0x1A = 0x03) */
+    uint8_t dlpf_cfg = 0x03;
+    if (HAL_I2C_Mem_Write(s_hi2c, IMU_I2C_ADDRESS, MPU6050_REG_CONFIG, 1, &dlpf_cfg, 1, 100) != HAL_OK)
+    {
+        return false;
+    }
+
+    /* Configure Gyroscope for +/-250 dps (register 0x1B = 0x00) */
+    uint8_t gyro_cfg = 0x00;
+    if (HAL_I2C_Mem_Write(s_hi2c, IMU_I2C_ADDRESS, MPU6050_REG_GYRO_CONFIG, 1, &gyro_cfg, 1, 100) != HAL_OK)
+    {
+        return false;
+    }
+
+    /* Configure Accelerometer for +/-2g (register 0x1C = 0x00) */
+    uint8_t accel_cfg = 0x00;
+    if (HAL_I2C_Mem_Write(s_hi2c, IMU_I2C_ADDRESS, MPU6050_REG_ACCEL_CONFIG, 1, &accel_cfg, 1, 100) != HAL_OK)
+    {
+        return false;
+    }
+
     return true;
 }
 

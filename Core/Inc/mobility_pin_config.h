@@ -134,12 +134,47 @@ extern "C" {
 #endif
 
 /* ========================================================================= */
-/* 5. ONBOARD SYSTEM DIAGNOSTICS                                             */
+/* 5. INDICATION & DIAGNOSTIC SUBSYSTEM (3 LEDs + 1 Buzzer)                  */
 /* ========================================================================= */
-/** Active-LOW User Heartbeat LED (PC13 on BlackPill) */
-#define MOBILITY_HEARTBEAT_PORT         GPIOC
-#define MOBILITY_HEARTBEAT_PIN          GPIO_PIN_13
-#define MOBILITY_HEARTBEAT_CLK_ENABLE() __HAL_RCC_GPIOC_CLK_ENABLE()
+/**
+ * Diagnostic indicators on GPIOB (PB12..PB15):
+ * - PB12: Audible Buzzer (Active alarm / watchdog trip)
+ * - PB13: LED 1 (Red) - Watchdog trip / Error alert
+ * - PB14: LED 2 (Yellow) - Drivetrain motion active
+ * - PB15: LED 3 (Green) - System ready & micro-ROS connected
+ */
+#define MOBILITY_BUZZER_PORT            GPIOB
+#define MOBILITY_BUZZER_PIN             GPIO_PIN_12
+#define MOBILITY_BUZZER_CLK_ENABLE()    __HAL_RCC_GPIOB_CLK_ENABLE()
+
+#define MOBILITY_LED1_PORT              GPIOB
+#define MOBILITY_LED1_PIN               GPIO_PIN_13
+#define MOBILITY_LED1_CLK_ENABLE()      __HAL_RCC_GPIOB_CLK_ENABLE()
+
+#define MOBILITY_LED2_PORT              GPIOB
+#define MOBILITY_LED2_PIN               GPIO_PIN_14
+#define MOBILITY_LED2_CLK_ENABLE()      __HAL_RCC_GPIOB_CLK_ENABLE()
+
+#define MOBILITY_LED3_PORT              GPIOB
+#define MOBILITY_LED3_PIN               GPIO_PIN_15
+#define MOBILITY_LED3_CLK_ENABLE()      __HAL_RCC_GPIOB_CLK_ENABLE()
+
+/* Diagnostic Direct Control Macros */
+#define MOBILITY_BUZZER_ON()            HAL_GPIO_WritePin(MOBILITY_BUZZER_PORT, MOBILITY_BUZZER_PIN, GPIO_PIN_SET)
+#define MOBILITY_BUZZER_OFF()           HAL_GPIO_WritePin(MOBILITY_BUZZER_PORT, MOBILITY_BUZZER_PIN, GPIO_PIN_RESET)
+#define MOBILITY_BUZZER_TOGGLE()        HAL_GPIO_TogglePin(MOBILITY_BUZZER_PORT, MOBILITY_BUZZER_PIN)
+
+#define MOBILITY_LED1_ON()              HAL_GPIO_WritePin(MOBILITY_LED1_PORT, MOBILITY_LED1_PIN, GPIO_PIN_SET)
+#define MOBILITY_LED1_OFF()             HAL_GPIO_WritePin(MOBILITY_LED1_PORT, MOBILITY_LED1_PIN, GPIO_PIN_RESET)
+#define MOBILITY_LED1_TOGGLE()          HAL_GPIO_TogglePin(MOBILITY_LED1_PORT, MOBILITY_LED1_PIN)
+
+#define MOBILITY_LED2_ON()              HAL_GPIO_WritePin(MOBILITY_LED2_PORT, MOBILITY_LED2_PIN, GPIO_PIN_SET)
+#define MOBILITY_LED2_OFF()             HAL_GPIO_WritePin(MOBILITY_LED2_PORT, MOBILITY_LED2_PIN, GPIO_PIN_RESET)
+#define MOBILITY_LED2_TOGGLE()          HAL_GPIO_TogglePin(MOBILITY_LED2_PORT, MOBILITY_LED2_PIN)
+
+#define MOBILITY_LED3_ON()              HAL_GPIO_WritePin(MOBILITY_LED3_PORT, MOBILITY_LED3_PIN, GPIO_PIN_SET)
+#define MOBILITY_LED3_OFF()             HAL_GPIO_WritePin(MOBILITY_LED3_PORT, MOBILITY_LED3_PIN, GPIO_PIN_RESET)
+#define MOBILITY_LED3_TOGGLE()          HAL_GPIO_TogglePin(MOBILITY_LED3_PORT, MOBILITY_LED3_PIN)
 
 #ifdef __cplusplus
 }

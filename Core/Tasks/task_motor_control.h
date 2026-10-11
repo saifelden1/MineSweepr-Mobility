@@ -15,6 +15,7 @@ extern "C" {
 
 void Task_MotorControl_Init(void);
 void Task_MotorControl_SetTarget(float linear_x, float angular_z);
+bool Task_MotorControl_IsMotionActive(void);
 void StartMotorControlTask(void *argument);
 
 #ifdef __cplusplus
