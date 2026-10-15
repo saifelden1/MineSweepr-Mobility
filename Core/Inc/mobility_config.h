@@ -3,7 +3,7 @@
 
 /* Operational & Safety Parameters */
 #define MOBILITY_ROS_DOMAIN_ID 42U
-#define MOBILITY_DRIVE_CONFIGURED 0
+#define MOBILITY_DRIVE_CONFIGURED 1
 #define MOBILITY_TRACK_WIDTH_M 0.50f /* Replace with measured left/right track separation. */
 #define MOBILITY_FULL_SPEED_MPS 1.00f /* Replace with measured full-PWM ground speed. */
 #define MOBILITY_MAX_LINEAR_MPS 0.40f
