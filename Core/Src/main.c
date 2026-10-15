@@ -1,244 +1,111 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body for STM32_Mobility ECU
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
-#include "dma.h"
-#include "i2c.h"
-#include "tim.h"
-#include "usart.h"
-#include "gpio.h"
+#include "mobility_config.h"
+#include "ros_interface.h"
+#include "sensors.h"
+#include <rmw_microros/rmw_microros.h>
+#include <uxr/client/transport.h>
+#include <string.h>
+#include <time.h>
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-#include "cmsis_os.h"
-#include "mobility_pin_config.h"
-#include "mobility_diagnostics_driver.h"
-#include "cytron_mdd10a_driver.h"
-#include "mpu6050_driver.h"
-#include "neo6m_driver.h"
-#include "task_safety_watchdog.h"
-#include "task_motor_control.h"
-#include "task_sensor_acq.h"
-#include "task_microros.h"
-#include "microros_client.h"
-#include "microros_transport.h"
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-void MX_FREERTOS_Init(void);
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
+static uint8_t transport_rx[1024];
+static size_t transport_tail;
+static bool transport_open(struct uxrCustomTransport *transport)
+{
+    (void)transport; transport_tail=0;
+    HAL_UART_AbortReceive(&huart1);
+    return HAL_UART_Receive_DMA(&huart1,transport_rx,sizeof(transport_rx))==HAL_OK;
+}
+static bool transport_close(struct uxrCustomTransport *transport)
+{
+    (void)transport;
+    drive_stop(); return HAL_UART_AbortReceive(&huart1)==HAL_OK;
+}
+static size_t transport_write(struct uxrCustomTransport *transport, const uint8_t *buf, size_t len, uint8_t *error)
+{
+    (void)transport;
+    if (len>65535 || HAL_UART_Transmit(&huart1,(uint8_t *)buf,(uint16_t)len,20)!=HAL_OK) {
+        *error=1; return 0;
+    }
+    *error=0; return len;
+}
+static size_t transport_read(struct uxrCustomTransport *transport, uint8_t *buf, size_t len, int timeout, uint8_t *error)
+{
+    (void)transport;
+    size_t got=0; uint32_t start=HAL_GetTick();
+    do {
+        size_t head=sizeof(transport_rx)-__HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
+        head%=sizeof(transport_rx);
+        while (transport_tail!=head && got<len) {
+            buf[got++]=transport_rx[transport_tail];
+            transport_tail=(transport_tail+1U)%sizeof(transport_rx);
+        }
+        if (got || timeout<=0) break;
+        HAL_Delay(1);
+    } while (HAL_GetTick()-start<(uint32_t)timeout);
+    *error=0; return got;
+}
+/* Bare-metal monotonic clock, with HAL's 32-bit rollover extended to 64 bits. */
+int clock_gettime(clockid_t clock, struct timespec *time)
+{
+    (void)clock;
+    static uint32_t previous;
+    static uint64_t high;
+    uint32_t tick=HAL_GetTick();
+    if (tick<previous) high+=1ULL<<32;
+    previous=tick;
+    uint64_t ms=high+tick;
+    time->tv_sec=(time_t)(ms/1000U); time->tv_nsec=(long)((ms%1000U)*1000000U);
+    return 0;
+}
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_I2C2_Init();
-  MX_TIM4_Init();
-  MX_USART1_UART_Init();
-  MX_USART2_UART_Init();
-  /* USER CODE BEGIN 2 */
-  /* Initialize concrete BSP drivers */
-  Mobility_Diagnostics_Init();
-  Cytron_MDD10A_Init(&htim4);
-  MPU6050_Init(&hi2c2);
-  NEO6M_Init(&huart2);
-
-  /* Initialize micro-ROS transport and client */
-  MicroROS_Transport_Init(&huart1, &hdma_usart1_rx, &hdma_usart1_tx);
-  MicroROS_Client_Init();
-
-  /* Initialize application tasks */
-  Task_SafetyWatchdog_Init();
-  Task_MotorControl_Init();
-  Task_SensorAcq_Init();
-  Task_MicroROS_Init();
-  /* USER CODE END 2 */
-
-  /* Init scheduler */
-  osKernelInitialize();
-
-  /* Call init function for freertos objects (in freertos.c) */
-  MX_FREERTOS_Init();
-
-  /* Start scheduler */
-  osKernelStart();
-
-  /* We should never get here as control is now taken by the scheduler */
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+    board_init(); drive_init();
+    if (HAL_TIM_Base_Start_IT(&htim3)!=HAL_OK) Error_Handler();
+    sensors_init();
+    rmw_uros_set_custom_transport(true,NULL,transport_open,transport_close,transport_write,transport_read);
+    bool connected=false;
+    uint32_t ping_tick=HAL_GetTick();
+    for (;;) {
+        gps_poll();
+        if (!connected) {
+            drive_stop();
+            if (HAL_GetTick()-ping_tick>=500U) {
+                ping_tick=HAL_GetTick();
+                if (rmw_uros_ping_agent(20,1)==RMW_RET_OK) connected=ros_entities_create();
+            }
+            HAL_Delay(1);
+        } else {
+            ros_spin();
+            if (HAL_GetTick()-ping_tick>=500U) {
+                ping_tick=HAL_GetTick();
+                if (rmw_uros_ping_agent(20,1)!=RMW_RET_OK) {
+                    ros_entities_destroy(); connected=false;
+                }
+            }
+        }
+        HAL_GPIO_WritePin(MOBILITY_LED3_PORT, MOBILITY_LED3_PIN, connected ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    }
 }
-
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *timer)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-
-  /** Configure the main internal regulator output voltage
-  */
-  __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 25;
-  RCC_OscInitStruct.PLL.PLLN = 192;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    if (timer->Instance==TIM3) motor_safety_tick();
 }
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
-/**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM11 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *uart) { if (uart==&huart2) gps_rx_complete(); }
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *uart)
 {
-  /* USER CODE BEGIN Callback 0 */
-
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM11) {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
-
-  /* USER CODE END Callback 1 */
+    if (uart==&huart2) gps_uart_error();
+    if (uart==&huart1) {
+        drive_stop(); HAL_UART_AbortReceive(&huart1); transport_tail=0;
+        HAL_UART_Receive_DMA(&huart1,transport_rx,sizeof(transport_rx));
+    }
 }
-
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
 void Error_Handler(void)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  __disable_irq();
-  while (1)
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */
+    /* Direct register stop on all 4 channels works even before HAL handles have been initialized. */
+    __HAL_RCC_TIM4_CLK_ENABLE();
+    TIM4->CCR1=0; TIM4->CCR2=0; TIM4->CCR3=0; TIM4->CCR4=0;
+    HAL_GPIO_WritePin(MOBILITY_LED1_PORT, MOBILITY_LED1_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(MOBILITY_BUZZER_PORT, MOBILITY_BUZZER_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(MOBILITY_LED3_PORT, MOBILITY_LED3_PIN, GPIO_PIN_RESET);
+    __disable_irq(); for (;;) {}
 }
-
-#ifdef  USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t *file, uint32_t line)
-{
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */
