@@ -1,5 +1,8 @@
 Debug/
 Release/
-build/
-micro_ros_stm32cubemx_utils/
+build/*
+!build/STM32_Mobility.bin
+!build/STM32_Mobility.elf
+!build/STM32_Mobility.map
+.metadata/
 *.launch
