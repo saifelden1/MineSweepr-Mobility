@@ -12,7 +12,7 @@
 #define MOBILITY_REAR_LEFT_INVERT 1 /* Independent polarity for the rear-left motor. */
 #define MOBILITY_RIGHT_INVERT 0
 #define MOBILITY_REAR_RIGHT_INVERT 1 /* Independent polarity for the rear-right motor. */
-#define MOBILITY_COMMAND_TIMEOUT_MS 1000U /* Temporary raised-wheel diagnostic; restore 300U after testing. */
+#define MOBILITY_COMMAND_TIMEOUT_MS 300U
 #define MOBILITY_PWM_PERIOD 4799U /* TIM4 = 96 MHz / 4800 = 20 kHz */
 
 /* Drivetrain (2x Cytron MDD10A Dual-Channel Drivers) */
