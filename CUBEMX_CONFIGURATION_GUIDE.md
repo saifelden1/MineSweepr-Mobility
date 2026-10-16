@@ -1,4 +1,6 @@
 # STM32CubeMX Graphical Configuration Guide: STM32_Mobility ECU
+
+> **Historical guide — current wiring correction, 17 October 2026:** use the current table in [README.md](README.md) and the checked-in `.ioc`/`Core/Inc/mobility_config.h`. Front-right DIR is **PA4**, rear-right DIR is **PA5**. PC13/PC14 are not motor directions, and PB12–PB15 indicators/buzzer are removed. The current firmware is bare-metal with a 300 ms watchdog; the older FreeRTOS/200 ms/indicator instructions below must not be used to regenerate or commission this revision. Current build directory is `build-relay`.
 ## Complete Step-by-Step Hardware & Middleware Setup for Autonomous Minesweeper Locomotion & Navigation
 
 **Target MCU:** WeAct Studio STM32F411CEU6 BlackPill (ARM Cortex-M4F @ 96 MHz)  

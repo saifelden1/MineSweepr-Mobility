@@ -19,6 +19,16 @@
 
 USART1 remains 921600 baud, ROS domain 42. The Pi agent uses its already configured GPIO UART `/dev/ttyAMA0`. No Black Pill relay, status LEDs or buzzer are driven. The 300 ms motor watchdog and both rear motor inversions are retained. Power the GPS breakout from its rated supply, and power motors through the drivers, not the MCU. Aux uses a separate USB–UART adapter connected to Pi USB; do not join the two STM TX outputs.
 
+### Current physical commissioning — 17 October 2026
+
+The source uses a bare-metal main loop and independent 100 Hz safety interrupt. The older FreeRTOS, 200 ms, LED/buzzer and direction-pin sections below are historical. Use the [complete laptop/Pi/STM wiring and commissioning runbook](https://github.com/badawyengineer/Minesweeper/blob/docs/manual-deployment-batches/HARDWARE_COMMISSIONING.md) for actual combined acceptance.
+
+1. With motor power disconnected, verify F411 target, current PA4/PA5 wiring and selected `build-relay/STM32_Mobility.elf`; record programmer verification if flashed. Old `build/manual-stable-20261016` firmware uses superseded wiring.
+2. Start exactly one Pi agent/manual stack and confirm real `/mobility/heartbeat`, changing `/imu/data`, and fresh `/gps/fix` when GPS is installed. Check GUI/operator-loss gating with motors still disconnected. No status LEDs are available as proof of connection.
+3. Securely raise wheels, confirm cutoff and apply driver power only for operator-approved direction/release/STOP/recovery checks. Both rear motor inversions are already enabled. Requested speed is not measured wheel speed.
+4. Test the independent 300 ms watchdog separately with the Pi gate stopped and a bounded direct command stream that ends without an explicit zero; measure PWM cutoff, not just wheel coast. The `ms pulse` helper sends zero and does not prove this watchdog.
+5. Record physical results as PASS/FAIL/BLOCKED/NOT RUN; do not infer flashing or drive acceptance from compilation, topic visibility or a Git push. This documentation update ran no physical tests or firmware builds.
+
 ## Autonomous Minesweeper Rover — Locomotion, Navigation & micro-ROS Control Subsystem
 
 ![Platform](https://img.shields.io/badge/Platform-STM32F411CEU6%20BlackPill-blue.svg)
