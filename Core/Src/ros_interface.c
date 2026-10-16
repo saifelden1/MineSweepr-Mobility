@@ -108,7 +108,9 @@ static void heartbeat_callback(rcl_timer_t *timer, int64_t last)
 bool ros_entities_create(void)
 {
     drive_stop();
-    rcl_allocator_t allocator=rcl_get_default_allocator();
+    /* RCLC support/executor retain this pointer after setup returns. */
+    static rcl_allocator_t allocator;
+    allocator=rcl_get_default_allocator();
     rcl_init_options_t options=rcl_get_zero_initialized_init_options();
     if (rcl_init_options_init(&options,allocator)!=RCL_RET_OK) return false;
     rcl_ret_t code=rcl_init_options_set_domain_id(&options,MOBILITY_ROS_DOMAIN_ID);
