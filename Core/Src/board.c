@@ -45,19 +45,12 @@ void board_init(void)
     pin.Speed = GPIO_SPEED_FREQ_HIGH;
     HAL_GPIO_Init(GPIOB, &pin);
 
-    /* Right Drivetrain Directions on GPIOC (FR: PC13, RR: PC14) */
-    HAL_GPIO_WritePin(GPIOC, MOTOR_FR_DIR_PIN | MOTOR_RR_DIR_PIN, GPIO_PIN_RESET);
+    /* Right Drivetrain Directions on GPIOA (FR: PA4, RR: PA5). */
+    HAL_GPIO_WritePin(GPIOA, MOTOR_FR_DIR_PIN | MOTOR_RR_DIR_PIN, GPIO_PIN_RESET);
     pin.Pin = MOTOR_FR_DIR_PIN | MOTOR_RR_DIR_PIN;
     pin.Mode = GPIO_MODE_OUTPUT_PP;
     pin.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOC, &pin);
-
-    /* Diagnostics & Indicators on GPIOB (PB12: Buzzer, PB13: LED1 Red, PB14: LED2 Yel, PB15: LED3 Gre) */
-    HAL_GPIO_WritePin(GPIOB, MOBILITY_BUZZER_PIN | MOBILITY_LED1_PIN | MOBILITY_LED2_PIN | MOBILITY_LED3_PIN, GPIO_PIN_RESET);
-    pin.Pin = MOBILITY_BUZZER_PIN | MOBILITY_LED1_PIN | MOBILITY_LED2_PIN | MOBILITY_LED3_PIN;
-    pin.Mode = GPIO_MODE_OUTPUT_PP;
-    pin.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOB, &pin);
+    HAL_GPIO_Init(GPIOA, &pin);
 
     /* 4-Channel Motor PWM on TIM4 (PB6: CH1, PB7: CH2, PB8: CH3, PB9: CH4) */
     pin.Pin = GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9;

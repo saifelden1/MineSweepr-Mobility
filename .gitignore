@@ -6,3 +6,5 @@ build/*
 !build/STM32_Mobility.map
 .metadata/
 *.launch
+
+build-relay/

@@ -1,4 +1,24 @@
 # STM32_Mobility Firmware
+
+> **Current flash wiring — 16 October 2026:** use the table below and `STM32_Mobility.ioc`. The older indicator diagrams and PC13/PC14 motor assignments later in this historical guide are superseded. Build with `cmake -S . -B build-relay -DCMAKE_TOOLCHAIN_FILE=cmake/arm-gcc.cmake` then `cmake --build build-relay`. Flash `build-relay/STM32_Mobility.elf` (or `.bin` at `0x08000000`).
+
+| Black Pill pin | Connected device pin |
+|---|---|
+| PB6 / PB4 | Left MDD10A PWM1 / DIR1 (front-left) |
+| PB7 / PB5 | Left MDD10A PWM2 / DIR2 (rear-left) |
+| PB8 / PA4 | Right MDD10A PWM1 / DIR1 (front-right) |
+| PB9 / PA5 | Right MDD10A PWM2 / DIR2 (rear-right) |
+| PB10 / PB3 | MPU-6050 SCL / SDA (3.3 V pull-ups) |
+| 3V3 / GND | Compatible MPU-6050 supply / ground; AD0 to GND |
+| PA3 / PA2 | GPS TX / RX (9600 baud; 3.3 V logic; RX optional) |
+| PA9 TX | Pi physical pin 10 / GPIO15 RX |
+| PA10 RX | Pi physical pin 8 / GPIO14 TX |
+| GND | Pi physical pin 6; both motor-driver grounds; GPS/IMU grounds |
+| 5V / GND | Regulated 5 V board supply / return |
+| PA13 / PA14 | ST-Link SWDIO / SWCLK (programming) |
+
+USART1 remains 921600 baud, ROS domain 42. The Pi agent uses its already configured GPIO UART `/dev/ttyAMA0`. No Black Pill relay, status LEDs or buzzer are driven. The 300 ms motor watchdog and both rear motor inversions are retained. Power the GPS breakout from its rated supply, and power motors through the drivers, not the MCU. Aux uses a separate USB–UART adapter connected to Pi USB; do not join the two STM TX outputs.
+
 ## Autonomous Minesweeper Rover — Locomotion, Navigation & micro-ROS Control Subsystem
 
 ![Platform](https://img.shields.io/badge/Platform-STM32F411CEU6%20BlackPill-blue.svg)

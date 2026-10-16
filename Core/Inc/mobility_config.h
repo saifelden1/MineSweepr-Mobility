@@ -26,28 +26,15 @@
 #define MOTOR_RL_DIR_PORT    GPIOB
 #define MOTOR_RL_DIR_PIN     GPIO_PIN_5
 
-/* Front-Right: TIM4 CH3 (PB8), DIR = PC13 */
+/* Front-Right: TIM4 CH3 (PB8), DIR = PA4 */
 #define MOTOR_FR_PWM_CHANNEL TIM_CHANNEL_3
-#define MOTOR_FR_DIR_PORT    GPIOC
-#define MOTOR_FR_DIR_PIN     GPIO_PIN_13
+#define MOTOR_FR_DIR_PORT    GPIOA
+#define MOTOR_FR_DIR_PIN     GPIO_PIN_4
 
-/* Rear-Right: TIM4 CH4 (PB9), DIR = PC14 */
+/* Rear-Right: TIM4 CH4 (PB9), DIR = PA5 */
 #define MOTOR_RR_PWM_CHANNEL TIM_CHANNEL_4
-#define MOTOR_RR_DIR_PORT    GPIOC
-#define MOTOR_RR_DIR_PIN     GPIO_PIN_14
-
-/* Diagnostics & Indicators */
-#define MOBILITY_BUZZER_PORT  GPIOB
-#define MOBILITY_BUZZER_PIN   GPIO_PIN_12  /* Active Buzzer: Watchdog & alarm */
-
-#define MOBILITY_LED1_PORT    GPIOB
-#define MOBILITY_LED1_PIN     GPIO_PIN_13  /* Red LED: Watchdog trip status */
-
-#define MOBILITY_LED2_PORT    GPIOB
-#define MOBILITY_LED2_PIN     GPIO_PIN_14  /* Yellow LED: Motion active */
-
-#define MOBILITY_LED3_PORT    GPIOB
-#define MOBILITY_LED3_PIN     GPIO_PIN_15  /* Green LED: micro-ROS link ready */
+#define MOTOR_RR_DIR_PORT    GPIOA
+#define MOTOR_RR_DIR_PIN     GPIO_PIN_5
 
 /* MPU-6050 IMU on I2C2 (PB10 SCL, PB3 SDA) */
 #define MPU6050_ADDRESS       (0x68U << 1)

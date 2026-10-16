@@ -83,7 +83,6 @@ int main(void)
                 }
             }
         }
-        HAL_GPIO_WritePin(MOBILITY_LED3_PORT, MOBILITY_LED3_PIN, connected ? GPIO_PIN_SET : GPIO_PIN_RESET);
     }
 }
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *timer)
@@ -104,8 +103,5 @@ void Error_Handler(void)
     /* Direct register stop on all 4 channels works even before HAL handles have been initialized. */
     __HAL_RCC_TIM4_CLK_ENABLE();
     TIM4->CCR1=0; TIM4->CCR2=0; TIM4->CCR3=0; TIM4->CCR4=0;
-    HAL_GPIO_WritePin(MOBILITY_LED1_PORT, MOBILITY_LED1_PIN, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(MOBILITY_BUZZER_PORT, MOBILITY_BUZZER_PIN, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(MOBILITY_LED3_PORT, MOBILITY_LED3_PIN, GPIO_PIN_RESET);
     __disable_irq(); for (;;) {}
 }

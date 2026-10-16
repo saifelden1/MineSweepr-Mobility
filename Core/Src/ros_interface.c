@@ -44,12 +44,9 @@ void mobility_write_cytron(float left, float right)
     /* 2x Cytron MDD10A: Left side (Front-Left PB6/PB4, Rear-Left PB7/PB5) */
     write_motor(left, MOTOR_FL_PWM_CHANNEL, MOTOR_FL_DIR_PORT, MOTOR_FL_DIR_PIN, MOBILITY_LEFT_INVERT);
     write_motor(left, MOTOR_RL_PWM_CHANNEL, MOTOR_RL_DIR_PORT, MOTOR_RL_DIR_PIN, MOBILITY_REAR_LEFT_INVERT);
-    /* Right side (Front-Right PB8/PC13, Rear-Right PB9/PC14) */
+    /* Right side (Front-Right PB8/PA4, Rear-Right PB9/PA5) */
     write_motor(right, MOTOR_FR_PWM_CHANNEL, MOTOR_FR_DIR_PORT, MOTOR_FR_DIR_PIN, MOBILITY_RIGHT_INVERT);
     write_motor(right, MOTOR_RR_PWM_CHANNEL, MOTOR_RR_DIR_PORT, MOTOR_RR_DIR_PIN, MOBILITY_REAR_RIGHT_INVERT);
-    /* Motion active indicator (Yellow LED on PB14) */
-    HAL_GPIO_WritePin(MOBILITY_LED2_PORT, MOBILITY_LED2_PIN,
-        (fabsf(left) > 0.01f || fabsf(right) > 0.01f) ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 void drive_init(void)
 {
