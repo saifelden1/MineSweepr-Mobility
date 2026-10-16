@@ -9,7 +9,9 @@
 #define MOBILITY_MAX_LINEAR_MPS 0.40f
 #define MOBILITY_MAX_ANGULAR_RPS 0.80f
 #define MOBILITY_LEFT_INVERT 0
+#define MOBILITY_REAR_LEFT_INVERT 1 /* Independent polarity for the rear-left motor. */
 #define MOBILITY_RIGHT_INVERT 0
+#define MOBILITY_REAR_RIGHT_INVERT 1 /* Independent polarity for the rear-right motor. */
 #define MOBILITY_COMMAND_TIMEOUT_MS 300U
 #define MOBILITY_PWM_PERIOD 4799U /* TIM4 = 96 MHz / 4800 = 20 kHz */
 
